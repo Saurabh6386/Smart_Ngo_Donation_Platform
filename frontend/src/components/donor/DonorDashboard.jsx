@@ -3,6 +3,10 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const DonorDashboard = () => {
+  const [myDonations, setMyDonations] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [loading, setLoading] = useState(false); // <--- 1. NEW LOADING STATE
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -11,81 +15,65 @@ const DonorDashboard = () => {
     location: "",
   });
 
-  // Separate state for the file
-  const [imageFiles, setImageFiles] = useState([]);
-  const [myDonations, setMyDonations] = useState([]);
-  const [loading, setLoading] = useState(false); // <--- Add this
   const { name, description, category, condition, location } = formData;
 
-  // 1. Fetch My Donations on Load AND Auto-Refresh every 3 seconds
-  // 1. Fetch My Donations on Load AND Auto-Refresh every 3 seconds
-  // 1. Fetch My Donations on Load AND Auto-Refresh
+  // Fetch My Donations
   useEffect(() => {
-    fetchMyDonations(); // Initial fetch
-
-    // Auto-refresh every 3 seconds
-    const intervalId = setInterval(() => {
-      fetchMyDonations();
-    }, 3000);
-
-    return () => clearInterval(intervalId); // Cleanup
+    fetchMyDonations();
   }, []);
 
   const fetchMyDonations = async () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      const config = {
-        headers: {
-          Authorization: `Bearer ${userInfo.token}`,
-        },
-      };
-
-      // 👇 TRICK: Add "?t=" + Date.now() to force a fresh request (No Cache)
+      const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
       const { data } = await axios.get(
-        `http://localhost:5000/api/donations/my?t=${Date.now()}`,
+        "http://localhost:5000/api/donations/my",
         config,
       );
-
-      // 👇 DEBUG: Open your browser console (F12) to see this
-      console.log("Fresh Data from Server:", data);
-
       setMyDonations(data);
     } catch (error) {
-      console.error("Error fetching donations:", error);
+      console.error(error);
     }
   };
 
-  const onChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      [e.target.name]: e.target.value,
+    }));
+  };
 
-  // Handle File Selection
   const onFileChange = (e) => {
-    setImageFiles(e.target.files); // Save FileList
+    setImageFiles(e.target.files);
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // <--- 2. START LOADING
+
+    if (!name || !description || !location) {
+      toast.error("Please fill all fields");
+      setLoading(false); // Stop loading if error
+      return;
+    }
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("name", name);
+    formDataToSend.append("description", description);
+    formDataToSend.append("category", category);
+    formDataToSend.append("condition", condition);
+    formDataToSend.append("location", location);
+
+    for (let i = 0; i < imageFiles.length; i++) {
+      formDataToSend.append("images", imageFiles[i]);
+    }
+
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      const formDataToSend = new FormData();
-
-      // Append normal fields
-      formDataToSend.append("name", name);
-      formDataToSend.append("description", description);
-      formDataToSend.append("category", category);
-      formDataToSend.append("condition", condition);
-      formDataToSend.append("location", location);
-
-      // Loop and append each file with the SAME key 'images'
-      if (imageFiles) {
-        for (let i = 0; i < imageFiles.length; i++) {
-          formDataToSend.append("images", imageFiles[i]);
-        }
-      }
-
       const config = {
         headers: {
           Authorization: `Bearer ${userInfo.token}`,
+          "Content-Type": "multipart/form-data",
         },
       };
 
@@ -94,9 +82,10 @@ const DonorDashboard = () => {
         formDataToSend,
         config,
       );
+
       toast.success("Donation Added Successfully!");
 
-      // Reset
+      // Reset Form
       setFormData({
         name: "",
         description: "",
@@ -105,159 +94,233 @@ const DonorDashboard = () => {
         location: "",
       });
       setImageFiles([]);
-      document.getElementById("fileInput").value = "";
-      fetchMyDonations();
+      document.getElementById("fileInput").value = ""; // Clear file input manually
+
+      fetchMyDonations(); // Refresh list
     } catch (error) {
-      console.error(error);
       toast.error("Failed to add donation");
+      console.error(error);
+    } finally {
+      setLoading(false); // <--- 3. STOP LOADING (Always runs)
     }
   };
 
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
+    <div style={{ padding: "20px", maxWidth: "1000px", margin: "0 auto" }}>
+      {/* FORM SECTION */}
       <div
         style={{
-          border: "1px solid #ccc",
+          background: "#f9f9f9",
           padding: "20px",
-          borderRadius: "8px",
-          marginBottom: "40px",
+          borderRadius: "10px",
+          marginBottom: "30px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
         }}
       >
-        <h3>➕ Donate an Item</h3>
+        <h2
+          style={{
+            borderBottom: "2px solid #ddd",
+            paddingBottom: "10px",
+            marginBottom: "20px",
+          }}
+        >
+          ➕ Add New Donation
+        </h2>
+
         <form onSubmit={onSubmit}>
-          {/* ... Name, Description, Category Inputs (Same as before) ... */}
-          <div style={{ marginBottom: "10px" }}>
-            <label>Item Name</label>
-            <input
-              type="text"
-              name="name"
-              value={name}
-              onChange={onChange}
-              required
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ marginBottom: "10px" }}>
-            <label>Description</label>
-            <textarea
-              name="description"
-              value={description}
-              onChange={onChange}
-              required
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ marginBottom: "10px" }}>
-            <label>Category</label>
-            <select
-              name="category"
-              value={category}
-              onChange={onChange}
-              style={inputStyle}
-            >
-              <option value="Clothing">Clothing</option>
-              <option value="Books">Books</option>
-              <option value="Furniture">Furniture</option>
-              <option value="Electronics">Electronics</option>
-            </select>
-          </div>
-          <div style={{ marginBottom: "10px" }}>
-            <label>Location</label>
-            <input
-              type="text"
-              name="location"
-              value={location}
-              onChange={onChange}
-              required
-              style={inputStyle}
-            />
-          </div>
-
-          {/* 👇 NEW IMAGE INPUT */}
-          <div style={{ marginBottom: "20px" }}>
-            <label>Upload Image</label>
-            <input
-              type="file"
-              id="fileInput"
-              onChange={onFileChange}
-              accept="image/*"
-              multiple
-              style={{ display: "block", marginTop: "5px" }}
-            />
-          </div>
-
-          <button
-            type="submit"
+          <div
             style={{
-              width: "100%",
-              padding: "10px",
-              background: "#28a745",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "20px",
             }}
           >
-            Submit Donation
+            {/* Left Column */}
+            <div>
+              <label style={labelStyle}>Item Name</label>
+              <input
+                type="text"
+                name="name"
+                value={name}
+                onChange={onChange}
+                style={inputStyle}
+                placeholder="e.g. Winter Jacket"
+              />
+
+              <label style={labelStyle}>Category</label>
+              <select
+                name="category"
+                value={category}
+                onChange={onChange}
+                style={inputStyle}
+              >
+                <option value="Clothing">Clothing</option>
+                <option value="Food">Food</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Books">Books</option>
+                <option value="Toys">Toys</option>
+                <option value="Other">Other</option>
+              </select>
+
+              <label style={labelStyle}>Condition</label>
+              <select
+                name="condition"
+                value={condition}
+                onChange={onChange}
+                style={inputStyle}
+              >
+                <option value="New">New</option>
+                <option value="Used - Like New">Used - Like New</option>
+                <option value="Used - Good">Used - Good</option>
+                <option value="Used - Fair">Used - Fair</option>
+              </select>
+            </div>
+
+            {/* Right Column */}
+            <div>
+              <label style={labelStyle}>Pickup Location</label>
+              <input
+                type="text"
+                name="location"
+                value={location}
+                onChange={onChange}
+                style={inputStyle}
+                placeholder="Full Address"
+              />
+
+              <label style={labelStyle}>Images (Max 5)</label>
+              <input
+                type="file"
+                id="fileInput"
+                multiple
+                onChange={onFileChange}
+                style={{ ...inputStyle, padding: "9px" }}
+              />
+
+              <label style={labelStyle}>Description</label>
+              <textarea
+                name="description"
+                value={description}
+                onChange={onChange}
+                style={{ ...inputStyle, height: "80px" }}
+                placeholder="Details about the item..."
+              />
+            </div>
+          </div>
+
+          {/* SUBMIT BUTTON WITH LOADING STATE */}
+          <button
+            type="submit"
+            disabled={loading} // <--- Disable when loading
+            style={{
+              width: "100%",
+              marginTop: "20px",
+              padding: "12px",
+              background: loading ? "#6c757d" : "#28a745", // Grey if loading, Green if ready
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              fontSize: "1.1rem",
+              cursor: loading ? "not-allowed" : "pointer",
+              transition: "0.3s",
+            }}
+          >
+            {loading ? "⏳ Adding Donation..." : "Submit Donation"}
           </button>
         </form>
       </div>
 
+      {/* HISTORY LIST */}
       <h3>📜 My Donation History</h3>
-      {myDonations.map((donation) => (
-        <div
-          key={donation._id}
+      {myDonations.length === 0 ? (
+        <p>No donations yet.</p>
+      ) : (
+        <table
           style={{
-            border: "1px solid #ddd",
-            padding: "15px",
-            marginBottom: "10px",
-            display: "flex",
-            gap: "15px",
+            width: "100%",
+            borderCollapse: "collapse",
+            marginTop: "10px",
           }}
         >
-          {/* 👇 Display the Image */}
-          {donation.image ? (
-            <img
-              src={donation.image}
-              alt={donation.name}
-              style={{
-                width: "80px",
-                height: "80px",
-                objectFit: "cover",
-                borderRadius: "5px",
-              }}
-            />
-          ) : (
-            /* Optional: Show a placeholder if no image exists */
-            <div
-              style={{
-                width: "80px",
-                height: "80px",
-                background: "#eee",
-                borderRadius: "5px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              📷
-            </div>
-          )}
-          <div>
-            <h4>{donation.name}</h4>
-            <p>{donation.status}</p>
-          </div>
-        </div>
-      ))}
+          <thead>
+            <tr style={{ background: "#eee", textAlign: "left" }}>
+              <th style={{ padding: "10px" }}>Item</th>
+              <th style={{ padding: "10px" }}>Status</th>
+              <th style={{ padding: "10px" }}>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {myDonations.map((d) => (
+              <tr key={d._id} style={{ borderBottom: "1px solid #ddd" }}>
+                <td
+                  style={{
+                    padding: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  <img
+                    src={d.image}
+                    alt={d.name}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "5px",
+                      objectFit: "cover",
+                    }}
+                  />
+                  {d.name}
+                </td>
+                <td style={{ padding: "10px" }}>
+                  <span
+                    style={{
+                      padding: "5px 10px",
+                      borderRadius: "15px",
+                      fontSize: "0.9rem",
+                      background:
+                        d.status === "Pending"
+                          ? "#fff3cd"
+                          : d.status === "Accepted"
+                            ? "#d1ecf1"
+                            : "#d4edda",
+                      color:
+                        d.status === "Pending"
+                          ? "#856404"
+                          : d.status === "Accepted"
+                            ? "#0c5460"
+                            : "#155724",
+                    }}
+                  >
+                    {d.status}
+                  </span>
+                </td>
+                <td style={{ padding: "10px" }}>
+                  {new Date(d.createdAt).toLocaleDateString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };
 
+// Styles
+const labelStyle = {
+  display: "block",
+  marginBottom: "5px",
+  fontWeight: "bold",
+  color: "#555",
+  marginTop: "10px",
+};
 const inputStyle = {
   width: "100%",
-  padding: "8px",
-  marginTop: "5px",
-  display: "block",
-  boxSizing: "border-box",
+  padding: "10px",
+  border: "1px solid #ccc",
+  borderRadius: "5px",
 };
 
 export default DonorDashboard;

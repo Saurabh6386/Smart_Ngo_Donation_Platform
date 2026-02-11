@@ -11,42 +11,53 @@ const NgoDashboard = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [isVerified, setIsVerified] = useState(false); // New State for verification
 
+  // ... imports and state ...
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const userInfo = JSON.parse(localStorage.getItem("userInfo"));
         setCurrentUser(userInfo);
-        setIsVerified(userInfo?.isVerified || false); // Get verification status
 
+        // 1. 👇 NEW: Check Live Verification Status from Server
+        // We assume you have a route /api/auth/me (If this fails, see Step 2 below)
+        const userRes = await axios.get("http://localhost:5000/api/auth/me", {
+          headers: { Authorization: `Bearer ${userInfo.token}` },
+        });
+
+        // Update State & LocalStorage with fresh status
+        const isFreshVerified = userRes.data.isVerified;
+        setIsVerified(isFreshVerified);
+
+        // Update LocalStorage so it remembers for next time
+        const updatedUser = { ...userInfo, isVerified: isFreshVerified };
+        localStorage.setItem("userInfo", JSON.stringify(updatedUser));
+
+        // 2. Fetch Donations (Existing Code)
         const config = {
-          headers: {
-            Authorization: `Bearer ${userInfo.token}`,
-          },
+          headers: { Authorization: `Bearer ${userInfo.token}` },
         };
-
         const { data } = await axios.get(
           "http://localhost:5000/api/donations",
-          config
+          config,
         );
 
-        // 1. Pending (Available for everyone)
         setDonations(data.filter((d) => d.status === "Pending"));
-
-        // 2. Accepted (My active pickups)
         setMyClaims(
           data.filter(
-            (d) => d.status === "Accepted" && d.collectedBy === userInfo._id
-          )
+            (d) => d.status === "Accepted" && d.collectedBy === userInfo._id,
+          ),
         );
-
-        // 3. Collected (My history)
         setMyCollected(
           data.filter(
-            (d) => d.status === "Collected" && d.collectedBy === userInfo._id
-          )
+            (d) => d.status === "Collected" && d.collectedBy === userInfo._id,
+          ),
         );
       } catch (error) {
-        toast.error("Error fetching donations");
+        console.error("Error fetching data:", error);
+        // Fallback to local storage if API fails
+        const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+        if (userInfo) setIsVerified(userInfo.isVerified);
       }
     };
 
@@ -57,7 +68,9 @@ const NgoDashboard = () => {
   const updateStatus = async (id, newStatus) => {
     // 🛑 Block Unverified NGOs from accepting
     if (newStatus === "Accepted" && !isVerified) {
-      return toast.error("Account pending verification! You cannot accept items yet.");
+      return toast.error(
+        "Account pending verification! You cannot accept items yet.",
+      );
     }
 
     try {
@@ -70,7 +83,7 @@ const NgoDashboard = () => {
       await axios.put(
         `http://localhost:5000/api/donations/${id}`,
         { status: newStatus },
-        config
+        config,
       );
 
       toast.success(`Donation marked as ${newStatus}!`);
@@ -90,7 +103,8 @@ const NgoDashboard = () => {
       }
     } catch (error) {
       // Show the specific error from backend if available
-      const message = error.response?.data?.message || "Failed to update status";
+      const message =
+        error.response?.data?.message || "Failed to update status";
       toast.error(message);
     }
   };
@@ -104,31 +118,37 @@ const NgoDashboard = () => {
 
   return (
     <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      
       {/* 👇 VERIFICATION STATUS BANNER 👇 */}
       {!isVerified ? (
-        <div style={{ 
-          backgroundColor: '#fff3cd', 
-          color: '#856404', 
-          padding: '15px', 
-          marginBottom: '20px', 
-          border: '1px solid #ffeeba', 
-          borderRadius: '5px',
-          textAlign: 'center'
-        }}>
+        <div
+          style={{
+            backgroundColor: "#fff3cd",
+            color: "#856404",
+            padding: "15px",
+            marginBottom: "20px",
+            border: "1px solid #ffeeba",
+            borderRadius: "5px",
+            textAlign: "center",
+          }}
+        >
           <h3>⚠️ Account Verification Pending</h3>
-          <p>You cannot accept donations until an Admin verifies your NGO account.</p>
+          <p>
+            You cannot accept donations until an Admin verifies your NGO
+            account.
+          </p>
         </div>
       ) : (
-        <div style={{ 
-          backgroundColor: '#d4edda', 
-          color: '#155724', 
-          padding: '10px', 
-          marginBottom: '20px', 
-          border: '1px solid #c3e6cb', 
-          borderRadius: '5px',
-          textAlign: 'center'
-        }}>
+        <div
+          style={{
+            backgroundColor: "#d4edda",
+            color: "#155724",
+            padding: "10px",
+            marginBottom: "20px",
+            border: "1px solid #c3e6cb",
+            borderRadius: "5px",
+            textAlign: "center",
+          }}
+        >
           ✅ <strong>Verified NGO Account</strong> - You can accept donations.
         </div>
       )}
@@ -153,7 +173,6 @@ const NgoDashboard = () => {
           <div style={gridStyle}>
             {myClaims.map((donation) => (
               <div key={donation._id} style={cardStyle}>
-                
                 <ImageSlider
                   images={
                     donation.images && donation.images.length > 0
@@ -212,12 +231,12 @@ const NgoDashboard = () => {
           {donations.map((donation) => (
             <div key={donation._id} style={cardStyle}>
               <ImageSlider
-                  images={
-                    donation.images && donation.images.length > 0
-                      ? donation.images
-                      : [donation.image]
-                  }
-                />
+                images={
+                  donation.images && donation.images.length > 0
+                    ? donation.images
+                    : [donation.image]
+                }
+              />
               <h4>{donation.name}</h4>
               <p>
                 <strong>Category:</strong> {donation.category}
@@ -229,7 +248,12 @@ const NgoDashboard = () => {
               <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                 <button
                   onClick={() => updateStatus(donation._id, "Accepted")}
-                  style={{ ...buttonStyle, flex: 1, opacity: isVerified ? 1 : 0.6, cursor: isVerified ? 'pointer' : 'not-allowed' }}
+                  style={{
+                    ...buttonStyle,
+                    flex: 1,
+                    opacity: isVerified ? 1 : 0.6,
+                    cursor: isVerified ? "pointer" : "not-allowed",
+                  }}
                 >
                   Accept
                 </button>

@@ -5,10 +5,10 @@ const {
   loginUser,
   getMe,
 } = require("../controllers/authController");
+const { protect } = require("../middlewares/authMiddleware");
 
-// Define the paths
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-// router.get('/me', protect, getMe); // We will uncomment 'protect' later
+router.get("/me", protect, getMe); // 👈 THIS LINE IS CRITICAL
 
 module.exports = router;
