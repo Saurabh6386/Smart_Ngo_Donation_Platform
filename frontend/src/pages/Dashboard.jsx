@@ -1,40 +1,23 @@
-import { useContext } from 'react';
-import AuthContext from '../context/AuthContext';
-import DonorDashboard from '../components/donor/DonorDashboard';
-import NgoDashboard from '../components/ngo/NgoDashboard';
-// 👇 IMPORT THE ADMIN DASHBOARD HERE
-import AdminDashboard from '../components/admin/AdminDashboard'; 
+import { useContext } from "react";
+import AuthContext from "../context/AuthContext";
+import AdminDashboard from "../components/admin/AdminDashboard"; // 👈 Restore your Admin Dashboard
+import Donate from "./Donate"; // 👈 Your new Donor Dashboard
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
 
-  // Safety check: Redirect if not logged in
   if (!user) {
-    return (
-      <div className="container" style={{ textAlign: 'center', marginTop: '50px' }}>
-        <h2>Please Login first</h2>
-        <a href="/login">Go to Login</a>
-      </div>
-    );
+    return <div className="p-10 text-center">Loading...</div>;
   }
 
-  return (
-    <div className="dashboard-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      
-      {/* HEADER SECTION */}
-      <div style={{ marginBottom: '30px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-        <h1>Welcome, {user.name} ({user.role})</h1>
-      </div>
-
-      {/* DASHBOARD CONTENT BASED ON ROLE */}
-      {user.role === 'donor' && <DonorDashboard />}
-      {user.role === 'ngo' && <NgoDashboard />}
-      
-      {/* 👇 THIS WAS THE MISSING PART */}
-      {user.role === 'admin' && <AdminDashboard />}
-    
-    </div>
-  );
+  // 👇 ROUTING LOGIC:
+  // If Admin or NGO -> Show the Admin/NGO Dashboard
+  // If Donor -> Show the Donate Page
+  if (user.role === "admin" || user.role === "ngo") {
+    return <AdminDashboard />;
+  } else {
+    return <Donate />;
+  }
 };
 
 export default Dashboard;

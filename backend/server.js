@@ -33,6 +33,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/donations", require("./routes/donationRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes")); // Admin routes added
+app.use("/api/analytics", require("./routes/analyticsRoutes"));
 
 // Socket.io Connection
 io.on("connection", (socket) => {

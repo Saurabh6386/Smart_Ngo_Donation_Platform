@@ -37,6 +37,11 @@ const userSchema = mongoose.Schema(
       type: String,
       default: null,
     },
+    profilePic: {
+      type: String,
+      default:
+        "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg", // Default Placeholder
+    },
   },
   {
     timestamps: true,

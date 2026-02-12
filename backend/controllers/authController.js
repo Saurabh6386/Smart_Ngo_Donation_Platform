@@ -3,6 +3,9 @@ const generateToken = require("../utils/generateToken");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
 
+// 👇 FIX 1: Use a reliable default image generator (Initials)
+const DEFAULT_PIC = "https://ui-avatars.com/api/?name=User&background=random";
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
@@ -24,38 +27,39 @@ const registerUser = async (req, res) => {
     // 3. Handle File Upload (Robust Logic)
     let verificationDocUrl = null;
 
-    if (req.file) {
-      console.log("File received:", req.file.path); // Debug log
+    // Default Profile Pic: Use their name initials
+    let profilePicUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
 
+    if (req.file) {
       try {
         // A. Try Uploading to Cloudinary
-        console.log("Attempting Cloudinary Upload...");
         const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: "ngo-docs",
+          folder: role === "ngo" ? "ngo-docs" : "user-profiles",
           resource_type: "auto", // Auto-detect (Image or PDF)
         });
 
-        console.log("Cloudinary Success:", result.secure_url);
-        verificationDocUrl = result.secure_url;
+        if (role === "ngo") {
+          verificationDocUrl = result.secure_url;
+        }
+        // If Donor -> Save as Profile Pic
+        else {
+          profilePicUrl = result.secure_url;
+        }
 
-        // If successful, delete local file to save space
         fs.unlinkSync(req.file.path);
       } catch (uploadError) {
-        // B. FALLBACK: If Cloudinary fails, use the Local File
         console.error("Cloudinary Failed. Using Local File instead.");
         console.error("Error Detail:", uploadError.message);
 
-        // Replace Windows backslashes (\) with forward slashes (/) for the URL
-        // Example: 'uploads\file.pdf' -> 'uploads/file.pdf'
-        verificationDocUrl = req.file.path.replace(/\\/g, "/");
+        // Fallback for local dev
+        if (role === "ngo") {
+          verificationDocUrl = req.file.path.replace(/\\/g, "/");
+        }
       }
     }
 
     // 4. Role & Verification Logic
-    // If role is admin, force it to donor (security).
     let safeRole = role === "admin" ? "donor" : role || "donor";
-
-    // Donors are auto-verified. NGOs need Admin approval.
     const isVerified = safeRole === "donor";
 
     // 5. Create User
@@ -67,8 +71,8 @@ const registerUser = async (req, res) => {
       role: safeRole,
       address,
       isVerified,
-      // 👇 This will now be the Cloudinary URL OR the Local Path (never null if file exists)
       verificationDocument: verificationDocUrl,
+      profilePic: profilePicUrl, // 👈 Saves Cloudinary URL or UI-Avatar default
     });
 
     if (user) {
@@ -78,6 +82,7 @@ const registerUser = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
+        profilePic: user.profilePic,
         token: generateToken(user._id),
       });
     } else {
@@ -104,6 +109,7 @@ const loginUser = async (req, res) => {
       email: user.email,
       role: user.role,
       isVerified: user.isVerified,
+      profilePic: user.profilePic, // 👈 Ensure frontend gets this on login
       token: generateToken(user._id),
     });
   } else {

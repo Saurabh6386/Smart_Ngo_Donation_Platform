@@ -13,11 +13,17 @@ const Login = () => {
   const navigate = useNavigate();
   const { login, user, error, clearError } = useContext(AuthContext);
 
-  // Redirect if already logged in
+  // Redirect based on Role
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      // 👇 NEW LOGIC: Donors go to Home, NGOs/Admins go to Dashboard
+      if (user.role === "donor") {
+        navigate("/");
+      } else {
+        navigate("/dashboard");
+      }
     }
+
     if (error) {
       toast.error(error);
       clearError();

@@ -12,7 +12,8 @@ const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 
 // Routes
-router.post("/register", upload.single("verificationDoc"), registerUser);
+// router.post("/register", upload.single("verificationDoc"), registerUser);
+router.post("/register", upload.single("file"), registerUser);
 router.post("/login", loginUser);
 router.get("/me", protect, getMe);
 
