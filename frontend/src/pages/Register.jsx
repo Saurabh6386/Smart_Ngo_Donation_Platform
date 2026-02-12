@@ -1,155 +1,158 @@
-import { useState, useEffect, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import AuthContext from '../context/AuthContext'; // Only used for checking if already logged in
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const Register = () => {
+  // Split state: Text fields & File
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    phone: '',
-    role: 'donor', // Default role
-    address: '',
+    name: "",
+    email: "",
+    password: "",
+    phone: "",
+    role: "donor",
+    address: "",
   });
-
-  const { name, email, password, phone, role, address } = formData;
+  const [file, setFile] = useState(null); // <--- For the document
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext); // We only need 'user' to redirect if ALREADY logged in
+  const { name, email, password, phone, role, address } = formData;
 
-  // If user is already logged in, redirect to dashboard
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
-
-  const onChange = (e) => {
-    setFormData((prevState) => ({
-      ...prevState,
-      [e.target.name]: e.target.value,
-    }));
-  };
+  const onChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const onFileChange = (e) => setFile(e.target.files[0]); // <--- Capture file
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
+    // 1. Validation
     if (!name || !email || !password || !phone) {
-      toast.error('Please fill all required fields');
-      return;
+      setLoading(false);
+      return toast.error("Please fill all required fields");
+    }
+
+    // Validate NGO Document
+    if (role === "ngo" && !file) {
+      setLoading(false);
+      return toast.error("NGOs must upload a verification certificate!");
+    }
+
+    // 2. Prepare FormData (Required for file uploads)
+    const data = new FormData();
+    data.append("name", name);
+    data.append("email", email);
+    data.append("password", password);
+    data.append("phone", phone);
+    data.append("role", role);
+    data.append("address", address);
+    if (file) {
+      data.append("verificationDoc", file); // <--- Key must match backend
     }
 
     try {
-      // 👇 DIRECT API CALL (Bypasses Auto-Login)
-      await axios.post('http://localhost:5000/api/auth/register', formData);
+      // 3. Send to Backend
+      // NOTE: Ensure your backend 'registerUser' route uses 'multer' middleware!
+      await axios.post("http://localhost:5000/api/auth/register", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-      // Success Message
-      toast.success('Registration Successful! Please Login.');
-
-      // Redirect to Login Page
-      navigate('/login');
-
+      toast.success("Registration Successful! Please Login.");
+      navigate("/login");
     } catch (error) {
-      // Handle Errors
-      const message = error.response && error.response.data && error.response.data.message
-        ? error.response.data.message
-        : error.message;
-      toast.error(message);
+      toast.error(error.response?.data?.message || "Registration failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={formWrapperStyle}>
-        <h1 style={{ textAlign: 'center', marginBottom: '20px', color: '#333' }}>
-          <span style={{ color: '#ff5252' }}>Register</span> Account
-        </h1>
-        <p style={{ textAlign: 'center', marginBottom: '30px', color: '#666' }}>
-          Join us to make a difference
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h1 className="text-2xl font-bold text-center mb-6">Register</h1>
+        <form onSubmit={onSubmit} className="space-y-4">
+          {/* ... Name, Email, Password, Phone inputs (Keep same as before) ... */}
 
-        <form onSubmit={onSubmit}>
-          <div style={formGroupStyle}>
-            <input
-              type="text"
-              name="name"
-              value={name}
-              placeholder="Full Name *"
-              onChange={onChange}
-              style={inputStyle}
-            />
-          </div>
-          <div style={formGroupStyle}>
-            <input
-              type="email"
-              name="email"
-              value={email}
-              placeholder="Email Address *"
-              onChange={onChange}
-              style={inputStyle}
-            />
-          </div>
-          <div style={formGroupStyle}>
-            <input
-              type="password"
-              name="password"
-              value={password}
-              placeholder="Password *"
-              onChange={onChange}
-              style={inputStyle}
-            />
-          </div>
-          <div style={formGroupStyle}>
-            <input
-              type="text"
-              name="phone"
-              value={phone}
-              placeholder="Phone Number *"
-              onChange={onChange}
-              style={inputStyle}
-            />
-          </div>
-          
-          <div style={formGroupStyle}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#666' }}>I am a:</label>
-            <select name="role" value={role} onChange={onChange} style={inputStyle}>
-              <option value="donor">Donor</option>
-              <option value="ngo">NGO</option>
-              {/* Admin option removed for security */}
-            </select>
-          </div>
+          <input
+            type="text"
+            name="name"
+            value={name}
+            onChange={onChange}
+            placeholder="Full Name"
+            className="w-full p-2 border rounded"
+          />
+          <input
+            type="email"
+            name="email"
+            value={email}
+            onChange={onChange}
+            placeholder="Email"
+            className="w-full p-2 border rounded"
+          />
+          <input
+            type="password"
+            name="password"
+            value={password}
+            onChange={onChange}
+            placeholder="Password"
+            className="w-full p-2 border rounded"
+          />
+          <input
+            type="text"
+            name="phone"
+            value={phone}
+            onChange={onChange}
+            placeholder="Phone"
+            className="w-full p-2 border rounded"
+          />
 
-          <div style={formGroupStyle}>
-            <input
-              type="text"
-              name="address"
-              value={address}
-              placeholder="Address (Optional)"
-              onChange={onChange}
-              style={inputStyle}
-            />
-          </div>
+          {/* Role Selection */}
+          <select
+            name="role"
+            value={role}
+            onChange={onChange}
+            className="w-full p-2 border rounded bg-white"
+          >
+            <option value="donor">Donor</option>
+            <option value="ngo">NGO</option>
+          </select>
 
-          <button type="submit" style={buttonStyle}>
-            Register
+          {/* 👇 NGO DOCUMENT UPLOAD (Only shows if NGO is selected) */}
+          {role === "ngo" && (
+            <div className="bg-blue-50 p-3 rounded border border-blue-200">
+              <label className="block text-sm font-medium text-blue-800 mb-1">
+                Upload Registration Certificate (PDF/Image)
+              </label>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={onFileChange}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+              />
+            </div>
+          )}
+
+          <input
+            type="text"
+            name="address"
+            value={address}
+            onChange={onChange}
+            placeholder="Address"
+            className="w-full p-2 border rounded"
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 transition"
+          >
+            {loading ? "Registering..." : "Register"}
           </button>
         </form>
-
-        <p style={{ textAlign: 'center', marginTop: '20px' }}>
-          Already have an account? <Link to="/login" style={{ color: '#ff5252', fontWeight: 'bold' }}>Login</Link>
-        </p>
       </div>
     </div>
   );
 };
-
-// --- STYLES ---
-const containerStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f4f4f4' };
-const formWrapperStyle = { background: 'white', padding: '40px', borderRadius: '10px', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' };
-const formGroupStyle = { marginBottom: '15px' };
-const inputStyle = { width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '5px', fontSize: '1rem' };
-const buttonStyle = { width: '100%', padding: '12px', background: '#ff5252', color: 'white', border: 'none', borderRadius: '5px', fontSize: '1rem', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' };
 
 export default Register;

@@ -6,9 +6,14 @@ const {
   getMe,
 } = require("../controllers/authController");
 const { protect } = require("../middlewares/authMiddleware");
+const multer = require("multer");
 
-router.post("/register", registerUser);
+// Configure Multer (Temporary storage for uploads)
+const upload = multer({ dest: "uploads/" });
+
+// Routes
+router.post("/register", upload.single("verificationDoc"), registerUser);
 router.post("/login", loginUser);
-router.get("/me", protect, getMe); // 👈 THIS LINE IS CRITICAL
+router.get("/me", protect, getMe);
 
 module.exports = router;

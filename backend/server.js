@@ -5,6 +5,7 @@ const http = require("http"); // New: Needed for Socket.io
 const { Server } = require("socket.io"); // New: Socket.io library
 const connectDB = require("./config/db");
 const { errorHandler } = require("./middlewares/errorMiddleware"); // Custom error handler
+const path = require("path");
 
 // Load env vars
 dotenv.config();
@@ -26,6 +27,7 @@ const io = new Server(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));

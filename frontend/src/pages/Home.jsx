@@ -1,205 +1,112 @@
-import React from "react";
-import "./Home.css"; // Import the CSS we just created
 import { Link } from "react-router-dom";
-import { useContext } from "react";
-import AuthContext from "../context/AuthContext";
 
 const Home = () => {
-  const { user } = useContext(AuthContext);
   return (
-    <div className="home-container">
-      {/* 1. HERO SECTION */}
-      <section className="hero-section">
-        <div className="hero-overlay"></div>
-        <div className="hero-content">
-          <h2 style={{ fontSize: "2rem", fontWeight: "300", margin: 0 }}>
-            Together We Can
-          </h2>
-          <h1 className="hero-title">
-            <span className="hero-highlight">Save Lives</span>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* --- HERO SECTION --- */}
+      <div className="bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center text-center">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-4">
+            Donate for a <span className="text-red-500">Better World</span>
           </h1>
-          <p className="hero-text">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ratione
-            officiis laborum a veniam? Soluta debitis suscipit, id blanditiis
-            illum numquam corrupti.
+          <p className="text-lg md:text-xl text-gray-600 max-w-2xl mb-8">
+            Connect directly with verified NGOs. Your unused items can bring a
+            smile to someone's face today.
           </p>
-          <Link to={user ? "/dashboard" : "/register"}>
-            <button className="btn-primary">
-              {user ? "Go to Dashboard" : "Start With A Little"}
-            </button>
-          </Link>
-        </div>
-      </section>
 
-      {/* 2. ABOUT US SECTION */}
-      <section className="section" id="about">
-        <h2 className="section-title">About Us</h2>
-        <div className="title-underline"></div>
-        <p style={{ maxWidth: "800px", margin: "0 auto", color: "#666" }}>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Commodi,
-          nobis. Ipsum maxime perspiciatis deleniti, placeat beatae non eum,
-          sapiente ea.
-        </p>
-
-        <div className="about-grid">
-          <div className="about-card">
-            <h3>GIVE DONATION</h3>
-            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
-            <Link to="/login">
-              <button className="btn-outline">Donate Now</button>
+          <div className="flex gap-4">
+            <Link
+              to="/register"
+              className="bg-red-500 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-lg hover:bg-red-600 transition transform hover:-translate-y-1"
+            >
+              Start Donating
+            </Link>
+            <Link
+              to="/login"
+              className="bg-white text-gray-800 border border-gray-300 px-8 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition"
+            >
+              Login
             </Link>
           </div>
-          <div className="about-card">
-            <h3>BECOME A VOLUNTEER</h3>
-            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
-            <button className="btn-outline">Become Now</button>
-          </div>
-          <div className="about-card">
-            <h3>GIVE SCHOLARSHIP</h3>
-            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
-            <button className="btn-outline">Give Immediately</button>
-          </div>
         </div>
-      </section>
+      </div>
 
-      {/* 3. PROGRAMS SECTION */}
-      <section
-        className="section"
-        style={{ background: "#f4f4f4" }}
-        id="programs"
-      >
-        <h2 className="section-title">Programs</h2>
-        <div className="title-underline"></div>
-
-        <div className="programs-grid">
-          {/* Program Card 1 */}
-          <div className="program-card">
-            <img src="../public/images/programs/1.jpg" alt="Education" />
-            <div className="program-info">
-              <h4>Education to every child</h4>
-              <span className="donation-goal">Donation Goal: $9845</span>
-              <Link to={user ? "/dashboard" : "/login"}>
-                <button className="btn-donate-small">Donate Now</button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Program Card 2 */}
-          <div className="program-card">
-            <img src="../public/images/programs/2.jpg" alt="Life" />
-            <div className="program-info">
-              <h4>Make life easier for them</h4>
-              <span className="donation-goal">Donation Goal: $9845</span>
-              <Link to="/login">
-                <button className="btn-donate-small">Donate Now</button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Program Card 3 */}
-          <div className="program-card">
-            <img src="../public/images/programs/3.jpg" alt="Kids" />
-            <div className="program-info">
-              <h4>Dedicating to helping kids</h4>
-              <span className="donation-goal">Donation Goal: $9845</span>
-              <Link to="/login">
-                <button className="btn-donate-small">Donate Now</button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Program Card 4 */}
-          <div className="program-card">
-            <img src="../public/images/programs/4.jpg" alt="Water" />
-            <div className="program-info">
-              <h4>Clean water for people</h4>
-              <span className="donation-goal">Donation Goal: $9845</span>
-              <Link to="/login">
-                <button className="btn-donate-small">Donate Now</button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. EDUCATION PARALLAX SECTION */}
-      <section className="education-section">
-        <div className="hero-overlay"></div>
-        <div className="education-content">
-          <h3>EDUCATION</h3>
-          <div
-            className="title-underline"
-            style={{ margin: "10px 0 20px 0", width: "50px" }}
-          ></div>
-          <h2 style={{ fontSize: "2.5rem", marginBottom: "20px" }}>
-            Education Is Essential For <br /> BETTER FUTURE
-          </h2>
-          <p>
-            Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-            Consequuntur ea culpa vitae commodi quos laboriosam qui consectetur
-            esse nisi.
+      {/* --- FEATURES SECTION --- */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900">How It Works</h2>
+          <p className="text-gray-500 mt-2">
+            Simple steps to make a big impact
           </p>
-          <button className="btn-primary" style={{ marginTop: "20px" }}>
-            EXPLORE NOW
-          </button>
-        </div>
-      </section>
-
-      {/* 5. GALLERY SECTION */}
-      <section className="section" id="gallery">
-        <h2 className="section-title">Gallery</h2>
-        <div className="title-underline"></div>
-        <div className="gallery-grid">
-          <img src="../public/images/gallery/1.jpg" alt="Gallery 1" />
-          <img src="../public/images/gallery/2.jpg" alt="Gallery 2" />
-          <img src="../public/images/gallery/3.jpg" alt="Gallery 3" />
-          <img src="../public/images/gallery/4.jpg" alt="Gallery 4" />
-        </div>
-      </section>
-
-      {/* 7. MAIN FOOTER */}
-      <footer className="main-footer">
-        <div className="footer-col">
-          <h1
-            style={{
-              background: "#ff5252",
-              padding: "5px 10px",
-              display: "inline-block",
-              color: "white",
-            }}
-          >
-            NGO
-          </h1>
-          <p style={{ marginTop: "20px" }}>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorem
-            reprehenderit quam nobis possimus velit?
-          </p>
-          <input
-            type="email"
-            placeholder="Enter your email id"
-            className="footer-input"
-          />
         </div>
 
-        <div className="footer-col">
-          <h3>USEFUL LINKS</h3>
-          <ul>
-            <li>Home</li>
-            <li>About Us</li>
-            <li>Programs</li>
-            <li>Education</li>
-            <li>Gallery</li>
-            <li>Join Us</li>
-          </ul>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Card 1 */}
+          <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-center border border-gray-100">
+            <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+              📦
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              1. List Your Item
+            </h3>
+            <p className="text-gray-600">
+              Take a photo and add details of your donation. It takes less than
+              a minute.
+            </p>
+          </div>
 
-        <div className="footer-col">
-          <h3>CONNECT WITH US</h3>
-          <p>Saraswati Colony, Sehatpur, Faridabad</p>
-          <p>121003, Haryana</p>
-          <br />
-          <p>info@ngo.com</p>
-          <p>(+91) 9898989898</p>
+          {/* Card 2 */}
+          <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-center border border-gray-100">
+            <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+              🤝
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              2. NGO Accepts
+            </h3>
+            <p className="text-gray-600">
+              Verified NGOs nearby will see your donation and accept it
+              instantly.
+            </p>
+          </div>
+
+          {/* Card 3 */}
+          <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition duration-300 text-center border border-gray-100">
+            <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+              🚚
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              3. Pickup & Joy
+            </h3>
+            <p className="text-gray-600">
+              The NGO collects the item from your doorstep. You spread
+              happiness!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* --- STATS SECTION (Optional) --- */}
+      <div className="bg-gray-900 text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          <div>
+            <h4 className="text-4xl font-bold text-red-500">100+</h4>
+            <p className="text-gray-400 mt-2">Verified NGOs</p>
+          </div>
+          <div>
+            <h4 className="text-4xl font-bold text-red-500">5,000+</h4>
+            <p className="text-gray-400 mt-2">Donations Completed</p>
+          </div>
+          <div>
+            <h4 className="text-4xl font-bold text-red-500">10,000+</h4>
+            <p className="text-gray-400 mt-2">Happy Faces</p>
+          </div>
+        </div>
+      </div>
+
+      {/* --- FOOTER --- */}
+      <footer className="bg-white border-t border-gray-200 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 py-8 text-center text-gray-500">
+          <p>© 2026 Smart Donation Platform. All rights reserved.</p>
         </div>
       </footer>
     </div>
