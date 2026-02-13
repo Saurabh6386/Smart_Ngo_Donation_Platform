@@ -147,7 +147,7 @@ const Home = () => {
             </span>
           </h3>
 
-          <div className="space-y-4 flex-grow">
+          <div className="space-y-4 grow">
             {displayedRecent.length === 0 ? (
               <p className="text-gray-500">No recent activity.</p>
             ) : (
@@ -201,7 +201,7 @@ const Home = () => {
             🏆 Top Donors of the Month
           </h3>
 
-          <div className="space-y-4 flex-grow">
+          <div className="space-y-4 grow">
             {displayedLeaderboard.length === 0 ? (
               <p className="text-gray-500">Be the first to donate!</p>
             ) : (

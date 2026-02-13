@@ -61,7 +61,7 @@ const DonationMap = ({ donations }) => {
   );
 
   return (
-    <div className="w-full h-[400px] rounded-xl overflow-hidden shadow-md border border-gray-200 z-0 relative">
+    <div className="w-full h-100 rounded-xl overflow-hidden shadow-md border border-gray-200 z-0 relative">
       <MapContainer
         center={defaultCenter}
         zoom={10}
@@ -96,7 +96,7 @@ const DonationMap = ({ donations }) => {
           return (
             <Marker key={donation._id} position={position}>
               <Popup>
-                <div className="text-center min-w-[150px]">
+                <div className="text-center min-w-37.5">
                   <img
                     src={donation.image}
                     alt={donation.name}

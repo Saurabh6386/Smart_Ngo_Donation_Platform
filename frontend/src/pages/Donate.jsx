@@ -316,7 +316,7 @@ const Donate = () => {
             📜 Your History
           </h2>
 
-          <div className="overflow-y-auto max-h-[600px]">
+          <div className="overflow-y-auto max-h-150">
             {myDonations.length === 0 ? (
               <p className="text-gray-500 text-center py-10">
                 You haven't donated anything yet.
