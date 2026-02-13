@@ -10,9 +10,9 @@ const getDonations = async (req, res) => {
   try {
     // 👇 The .populate() and .sort() are the crucial parts here!
     const donations = await Donation.find()
-      .populate("user", "name profilePic") 
+      .populate("user", "name profilePic")
       .sort({ createdAt: -1 }); // -1 sorts by newest first
-      
+
     res.status(200).json(donations);
   } catch (error) {
     res.status(500).json({ message: "Server Error" });
@@ -31,7 +31,8 @@ const getMyDonations = async (req, res) => {
 // @access  Private
 const createDonation = async (req, res) => {
   try {
-    const { name, description, category, condition, location } = req.body;
+    const { name, description, category, condition, location, availableSlots } =
+      req.body;
     let imageUrls = [];
 
     if (req.files && req.files.length > 0) {
@@ -45,10 +46,17 @@ const createDonation = async (req, res) => {
       });
     }
 
-    // 👇 NEW: Call OpenStreetMap (Nominatim API) to convert text location to Coordinates
+    let parsedSlots = [];
+    if (availableSlots) {
+      try {
+        parsedSlots = JSON.parse(availableSlots);
+      } catch (e) {
+        console.log("Error parsing slots");
+      }
+    }
+
     let coordinates = [77.209, 28.6139]; // Fallback (New Delhi)
     try {
-      // Free geocoding! (We use encodeURIComponent to make the address URL-safe)
       const geoRes = await axios.get(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`,
         {
@@ -57,7 +65,6 @@ const createDonation = async (req, res) => {
       );
 
       if (geoRes.data.length > 0) {
-        // MongoDB requires Longitude FIRST, then Latitude
         coordinates = [
           parseFloat(geoRes.data[0].lon),
           parseFloat(geoRes.data[0].lat),
@@ -78,6 +85,7 @@ const createDonation = async (req, res) => {
       condition,
       location,
       geometry: { type: "Point", coordinates }, // 👈 Save coordinates to DB
+      availableSlots: parsedSlots,
       image: imageUrls[0] || "https://via.placeholder.com/150",
       images: imageUrls,
     });
@@ -118,34 +126,30 @@ const getNearbyDonations = async (req, res) => {
 // @desc    Update donation status (Accept/Collect)
 // @route   PUT /api/donations/:id
 // @access  Private (NGO Only)
+// @desc    Update donation status (and allow pickup time updates)
 const updateDonationStatus = async (req, res) => {
   try {
-    const { status } = req.body;
-
-    // 👇 SECURITY CHECK: Block Unverified NGOs from accepting items
-    if (req.user.role === "ngo" && !req.user.isVerified) {
-      return res
-        .status(403)
-        .json({ message: "Your account is pending verification by Admin." });
-    }
-
+    const { status, pickupTime } = req.body;
     const donation = await Donation.findById(req.params.id);
 
-    if (!donation) {
-      res.status(404);
-      throw new Error("Donation not found");
+    if (!donation) return res.status(404).json({ message: "Not found" });
+
+    // 1. If a new status is provided, update it
+    if (status) {
+      donation.status = status;
+      // If NGO is accepting, record who accepted it
+      if (status === "Accepted") {
+        donation.collectedBy = req.user.id;
+      }
     }
 
-    // Update fields
-    donation.status = status;
-
-    // Track who collected it
-    if (status === "Accepted" || status === "Collected") {
-      donation.collectedBy = req.user.id;
+    // 2. If a pickupTime is provided, save it!
+    // (This allows the Donor to update the time from their dashboard later)
+    if (pickupTime) {
+      donation.pickupTime = pickupTime;
     }
 
-    const updatedDonation = await donation.save(); // Save to DB
-
+    const updatedDonation = await donation.save();
     res.status(200).json(updatedDonation);
   } catch (error) {
     console.error(error);
@@ -192,5 +196,5 @@ module.exports = {
   createDonation,
   updateDonationStatus,
   deleteDonation,
-  getNearbyDonations, 
+  getNearbyDonations,
 };

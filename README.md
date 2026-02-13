@@ -1,6 +1,5 @@
 Automated Pickup Scheduling: Right now, an NGO clicks "Accept," but there is no time attached. You would need to integrate a calendar system where Donors select "Available Times" and NGOs book a specific slot.
 
-Geospatial Search (Maps): Instead of just typing a "Pickup Location," you would need to integrate the Google Maps API or Mapbox. This way, an NGO in Delhi only sees donations within a 10km radius, sorted by distance.
 
 Automated Notifications: You would need to integrate Nodemailer (for emails) or Twilio (for SMS/WhatsApp) so that the second an NGO accepts an item, the donor gets a message saying: "Helping Hands is coming tomorrow at 2 PM to collect your jacket!"
 

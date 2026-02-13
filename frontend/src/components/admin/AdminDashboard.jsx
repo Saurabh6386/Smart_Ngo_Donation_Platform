@@ -9,6 +9,7 @@ const AdminDashboard = () => {
 
   const [users, setUsers] = useState([]);
   const [donations, setDonations] = useState([]);
+  const [selectedSlots, setSelectedSlots] = useState({});
 
   const [activeTab, setActiveTab] = useState(
     role === "admin" ? "users" : "donations",
@@ -97,14 +98,41 @@ const AdminDashboard = () => {
   };
 
   // --- NGO ACTIONS ---
+  // --- NGO ACTIONS ---
   const updateDonationStatus = async (id, newStatus) => {
     try {
+      const payload = { status: newStatus };
+
+      // 👇 THE FIX: Find the specific donation we are clicking on
+      const donationToUpdate = donations.find((d) => d._id === id);
+
+      if (newStatus === "Accepted") {
+        // Check if the donor actually provided slots
+        const hasSlots = donationToUpdate?.availableSlots?.length > 0;
+
+        if (hasSlots) {
+          // If they did provide slots, FORCE the NGO to pick one
+          const chosenSlot = selectedSlots[id];
+          if (!chosenSlot) {
+            return toast.error(
+              "⚠️ Please select a pickup time from the dropdown before accepting!",
+            );
+          }
+          payload.pickupTime = chosenSlot;
+        } else {
+          // If no slots were provided, let them accept it and set a default message
+          payload.pickupTime = "To be coordinated with donor";
+        }
+      }
+
       await axios.put(
         `http://localhost:5000/api/donations/${id}`,
-        { status: newStatus },
+        payload,
         getAuthHeader(),
       );
-      toast.success(`Donation marked as ${newStatus}!`);
+      toast.success(
+        `Pickup confirmed ${payload.pickupTime ? `for: ${payload.pickupTime}` : ""}!`,
+      );
       fetchDonations();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update status");
@@ -224,7 +252,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* 2. DONOR TABLE (Brought back!) */}
+          {/* 2. DONOR TABLE */}
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
               ❤️ Registered Donors{" "}
@@ -351,6 +379,7 @@ const AdminDashboard = () => {
                           </span>
                         </td>
                         <td className="px-5 py-5 text-sm">
+                          {/* Admin actions */}
                           {role === "admin" && (
                             <button
                               onClick={() => deleteDonation(d._id)}
@@ -359,26 +388,68 @@ const AdminDashboard = () => {
                               Delete
                             </button>
                           )}
+
+                          {/* NGO sees Accept dropdown */}
                           {role === "ngo" && d.status === "Pending" && (
-                            <button
-                              onClick={() =>
-                                updateDonationStatus(d._id, "Accepted")
-                              }
-                              className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition font-bold shadow-sm"
-                            >
-                              Accept Pickup
-                            </button>
+                            <div className="flex flex-col gap-2">
+                              {/* The Time Slot Dropdown */}
+                              {d.availableSlots &&
+                              d.availableSlots.length > 0 ? (
+                                <select
+                                  className="p-1 border border-gray-300 rounded text-sm outline-none focus:border-blue-500"
+                                  onChange={(e) =>
+                                    setSelectedSlots({
+                                      ...selectedSlots,
+                                      [d._id]: e.target.value,
+                                    })
+                                  }
+                                  defaultValue=""
+                                >
+                                  <option value="" disabled>
+                                    Select Pickup Time...
+                                  </option>
+                                  {d.availableSlots.map((slot) => (
+                                    <option key={slot} value={slot}>
+                                      {slot}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic">
+                                  No times provided
+                                </span>
+                              )}
+
+                              {/* The original Accept Button */}
+                              <button
+                                onClick={() =>
+                                  updateDonationStatus(d._id, "Accepted")
+                                }
+                                className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition font-bold shadow-sm"
+                              >
+                                Accept Pickup
+                              </button>
+                            </div>
                           )}
+
+                          {/* Show agreed time if already accepted */}
                           {role === "ngo" && d.status === "Accepted" && (
-                            <button
-                              onClick={() =>
-                                updateDonationStatus(d._id, "Collected")
-                              }
-                              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition font-bold shadow-sm"
-                            >
-                              Mark Collected ✔️
-                            </button>
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs bg-blue-50 text-blue-800 p-1 rounded font-medium border border-blue-100 text-center">
+                                🕒 {d.pickupTime || "Time TBD"}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  updateDonationStatus(d._id, "Collected")
+                                }
+                                className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition font-bold shadow-sm"
+                              >
+                                Mark Collected ✔️
+                              </button>
+                            </div>
                           )}
+
+                          {/* Show Completed State */}
                           {role === "ngo" && d.status === "Collected" && (
                             <span className="text-gray-400 italic">
                               Completed

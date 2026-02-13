@@ -34,8 +34,16 @@ const donationSchema = mongoose.Schema(
       default: "Pending",
     },
     location: {
-      type: String, // Where is the item located?
+      type: String,
       required: true,
+    },
+    availableSlots: {
+      type: [String],
+      default: [],
+    },
+    pickupTime: {
+      type: String,
+      default: null,
     },
     geometry: {
       type: {
@@ -58,6 +66,6 @@ const donationSchema = mongoose.Schema(
   },
 );
 
-donationSchema.index({ geometry: '2dsphere' });
+donationSchema.index({ geometry: "2dsphere" });
 
 module.exports = mongoose.model("Donation", donationSchema);

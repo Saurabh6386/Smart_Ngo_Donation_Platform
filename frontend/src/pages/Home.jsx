@@ -22,17 +22,21 @@ const Home = () => {
     fetchLiveAnalytics();
   }, []);
 
-  const fetchLiveAnalytics = async () => {
+ const fetchLiveAnalytics = async () => {
     try {
-      // 1. Fetch the big numbers (Keep your existing stats route)
-      const statsRes = await axios.get(
-        "http://localhost:5000/api/analytics/stats",
-      );
+      // 1. Fetch the big numbers
+      const statsRes = await axios.get("http://localhost:5000/api/analytics/stats");
       setStats(statsRes.data);
 
-      // 2. Fetch ALL live donations directly to guarantee it updates instantly!
+      // 2. Fetch ALL live donations
       const { data } = await axios.get("http://localhost:5000/api/donations");
-      setDonations(data);
+      
+      // 👇 THE FIX: Filter the list to ONLY show items that are "Collected"
+      const completedDonations = data.filter((donation) => donation.status === "Collected");
+      
+      // Save only the completed ones to the state
+      setDonations(completedDonations); 
+      
     } catch (error) {
       console.error("Error fetching analytics:", error);
     }
