@@ -4,6 +4,8 @@ const {
   registerUser,
   loginUser,
   getMe,
+  updateUserProfile,
+  getUserProfile,
 } = require("../controllers/authController");
 const { protect } = require("../middlewares/authMiddleware");
 const multer = require("multer");
@@ -16,5 +18,6 @@ const upload = multer({ dest: "uploads/" });
 router.post("/register", upload.single("file"), registerUser);
 router.post("/login", loginUser);
 router.get("/me", protect, getMe);
-
+router.get("/profile", protect, getUserProfile);
+router.put("/profile", protect, upload.single("profilePic"), updateUserProfile);
 module.exports = router;

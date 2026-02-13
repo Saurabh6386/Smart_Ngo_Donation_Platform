@@ -1,16 +1,22 @@
 const Donation = require("../models/Donation");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
+const axios = require("axios"); // 👈 Import axios
 
 // @desc    Get all donations (Available/Pending)
 // @route   GET /api/donations
 // @access  Private
 const getDonations = async (req, res) => {
-  const donations = await Donation.find({})
-    .populate("user", "name email phone")
-    .sort({ createdAt: -1 });
-
-  res.status(200).json(donations);
+  try {
+    // 👇 The .populate() and .sort() are the crucial parts here!
+    const donations = await Donation.find()
+      .populate("user", "name profilePic") 
+      .sort({ createdAt: -1 }); // -1 sorts by newest first
+      
+    res.status(200).json(donations);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 
 const getMyDonations = async (req, res) => {
@@ -28,23 +34,40 @@ const createDonation = async (req, res) => {
     const { name, description, category, condition, location } = req.body;
     let imageUrls = [];
 
-    // Parallel Image Upload (Faster)
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map((file) =>
         cloudinary.uploader.upload(file.path, { folder: "ngo-donations" }),
       );
-
       const results = await Promise.all(uploadPromises);
       imageUrls = results.map((result) => result.secure_url);
-
-      // Clean up local files
       req.files.forEach((file) => {
         if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       });
     }
 
-    if (!name || !description || !location) {
-      return res.status(400).json({ message: "Please add all fields" });
+    // 👇 NEW: Call OpenStreetMap (Nominatim API) to convert text location to Coordinates
+    let coordinates = [77.209, 28.6139]; // Fallback (New Delhi)
+    try {
+      // Free geocoding! (We use encodeURIComponent to make the address URL-safe)
+      const geoRes = await axios.get(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`,
+        {
+          headers: { "User-Agent": "SmartNGODonationApp/1.0" }, // OpenStreetMap requires a User-Agent
+        },
+      );
+
+      if (geoRes.data.length > 0) {
+        // MongoDB requires Longitude FIRST, then Latitude
+        coordinates = [
+          parseFloat(geoRes.data[0].lon),
+          parseFloat(geoRes.data[0].lat),
+        ];
+      }
+    } catch (geoError) {
+      console.error(
+        "Geocoding failed, using default coordinates.",
+        geoError.message,
+      );
     }
 
     const donation = await Donation.create({
@@ -54,11 +77,38 @@ const createDonation = async (req, res) => {
       category,
       condition,
       location,
-      image: imageUrls[0] || "https://via.placeholder.com/150", // Main image
-      images: imageUrls, // All images
+      geometry: { type: "Point", coordinates }, // 👈 Save coordinates to DB
+      image: imageUrls[0] || "https://via.placeholder.com/150",
+      images: imageUrls,
     });
 
     res.status(201).json(donation);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// 👇 NEW FUNCTION: Find donations within 10km radius
+// @desc    Get nearby donations
+// @route   GET /api/donations/nearby?lat=28.6&lng=77.2&radius=10
+const getNearbyDonations = async (req, res) => {
+  try {
+    // Get coords from the query URL, default to Delhi and 10km
+    const lng = parseFloat(req.query.lng) || 77.209;
+    const lat = parseFloat(req.query.lat) || 28.6139;
+    const radiusInKm = parseFloat(req.query.radius) || 10;
+
+    const donations = await Donation.find({
+      status: "Pending", // Only show available items
+      geometry: {
+        $near: {
+          $geometry: { type: "Point", coordinates: [lng, lat] },
+          $maxDistance: radiusInKm * 1000, // MongoDB calculates distance in METERS (10km * 1000 = 10,000m)
+        },
+      },
+    }).populate("user", "name phone");
+
+    res.status(200).json(donations);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
@@ -136,11 +186,11 @@ const deleteDonation = async (req, res) => {
   }
 };
 
-// 👇 Don't forget to export it!
 module.exports = {
   getDonations,
   getMyDonations,
   createDonation,
   updateDonationStatus,
-  deleteDonation, // <--- Add this
+  deleteDonation,
+  getNearbyDonations, 
 };

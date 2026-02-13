@@ -49,12 +49,17 @@ const userSchema = mongoose.Schema(
 );
 
 // Encrypt password using bcrypt before saving
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
+  // If the password wasn't changed (like when updating a profile pic), skip this!
   if (!this.isModified("password")) {
-    next();
+    return; // 👈 Just standard 'return' to stop the function
   }
+
+  // Generate salt and hash the password
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+
+  // No need for 'next()' or try/catch here, async handles errors automatically!
 });
 
 // Match user entered password to hashed password in database

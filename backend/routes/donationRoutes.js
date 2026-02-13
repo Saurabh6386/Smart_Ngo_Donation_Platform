@@ -6,6 +6,7 @@ const {
   updateDonationStatus, // <--- Make sure this is imported
   getMyDonations,
   deleteDonation,
+  getNearbyDonations,
 } = require("../controllers/donationController");
 
 const { protect } = require("../middlewares/authMiddleware"); // <--- CRITICAL IMPORT
@@ -22,7 +23,7 @@ router.route("/my").get(protect, getMyDonations);
 
 // 3. Update Status (Accept/Collect) -> THIS WAS LIKELY MISSING 'protect'
 router.route("/:id").put(protect, updateDonationStatus); // <--- ENSURE 'protect' IS HERE
-
+router.get("/nearby", protect, getNearbyDonations);
 router.delete("/:id", protect, deleteDonation);
 
 module.exports = router;

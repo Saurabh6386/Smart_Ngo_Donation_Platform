@@ -34,26 +34,29 @@ const Navbar = () => {
         <div>
           {user ? (
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-              {/* 👇 ROBUST IMAGE DISPLAY */}
-              <img
-                src={user.profilePic || DEFAULT_PIC}
-                alt="Profile"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: "2px solid white",
-                  backgroundColor: "#eee",
-                }}
-                // This fixes broken images automatically
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = DEFAULT_PIC;
-                }}
-              />
-
-              <span style={{ color: "#ccc" }}>Hello, {user.name}</span>
+              {/* 👇 THIS IS THE FIX: Wrapped image and name in a Link! 👇 */}
+              <Link to="/profile" style={profileLinkStyle} title="Edit Profile">
+                <img
+                  src={user.profilePic || DEFAULT_PIC}
+                  alt="Profile"
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "2px solid white",
+                    backgroundColor: "#eee",
+                  }}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = DEFAULT_PIC;
+                  }}
+                />
+                <span style={{ color: "#ccc", fontWeight: "bold" }}>
+                  Hello, {user.name}
+                </span>
+              </Link>
+              {/* 👆 END OF FIX 👆 */}
 
               <Link to="/" style={linkStyle}>
                 Home
@@ -108,6 +111,18 @@ const logoStyle = {
   display: "flex",
   alignItems: "center",
 };
+
+// 👇 ADDED THIS NEW STYLE FOR THE CLICKABLE PROFILE 👇
+const profileLinkStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  textDecoration: "none",
+  cursor: "pointer",
+  padding: "5px",
+  borderRadius: "5px",
+};
+
 const linkStyle = {
   color: "white",
   textDecoration: "none",

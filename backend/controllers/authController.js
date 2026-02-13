@@ -124,8 +124,74 @@ const getMe = async (req, res) => {
   res.status(200).json(req.user);
 };
 
+const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 👇 2. Check if a new file was uploaded from the frontend
+    let profilePicUrl = user.profilePic; // Default to existing pic
+    if (req.file) {
+      // Upload the new image to Cloudinary
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "user-profiles", // Creates a nice neat folder in your Cloudinary
+      });
+      profilePicUrl = result.secure_url;
+
+      // Delete the temporary file from your local 'uploads' folder
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+    }
+
+    // 👇 3. Update the text fields AND the profile picture
+    user.name = req.body.name || user.name;
+    user.phone = req.body.phone || user.phone;
+    user.address = req.body.address || user.address;
+    user.profilePic = profilePicUrl; // Save the Cloudinary URL!
+
+    const updatedUser = await user.save();
+
+    // Send the fresh data back to the frontend
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      phone: updatedUser.phone,
+      address: updatedUser.address,
+      profilePic: updatedUser.profilePic,
+      isVerified: updatedUser.isVerified,
+      verificationDocument: updatedUser.verificationDocument,
+    });
+  } catch (error) {
+    console.error("Profile Update Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+const getUserProfile = async (req, res) => {
+  try {
+    // Find the user by the token ID, but DON'T send the password back
+    const user = await User.findById(req.user.id).select("-password");
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getMe,
+  updateUserProfile,
+  getUserProfile,
 };

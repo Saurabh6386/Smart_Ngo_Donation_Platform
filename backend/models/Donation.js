@@ -37,6 +37,17 @@ const donationSchema = mongoose.Schema(
       type: String, // Where is the item located?
       required: true,
     },
+    geometry: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number], // Array of [longitude, latitude]
+        default: [77.209, 28.6139], // Default to New Delhi if geocoding fails
+      },
+    },
     collectedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // The NGO that collects it
@@ -46,5 +57,7 @@ const donationSchema = mongoose.Schema(
     timestamps: true,
   },
 );
+
+donationSchema.index({ geometry: '2dsphere' });
 
 module.exports = mongoose.model("Donation", donationSchema);
