@@ -6,6 +6,7 @@ const {
   getMe,
   updateUserProfile,
   getUserProfile,
+  getAllUsers,
 } = require("../controllers/authController");
 const { protect } = require("../middlewares/authMiddleware");
 const multer = require("multer");
@@ -19,5 +20,6 @@ router.post("/register", upload.single("file"), registerUser);
 router.post("/login", loginUser);
 router.get("/me", protect, getMe);
 router.get("/profile", protect, getUserProfile);
+router.get("/users", protect, getAllUsers);
 router.put("/profile", protect, upload.single("profilePic"), updateUserProfile);
 module.exports = router;

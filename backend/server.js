@@ -29,15 +29,32 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Make io available to controllers
+app.use((req, res, next) => {
+  req.io = io;
+  req.userSocketMap = userSocketMap;
+  next();
+});
+
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/donations", require("./routes/donationRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes")); // Admin routes added
 app.use("/api/analytics", require("./routes/analyticsRoutes"));
+app.use("/api/chat", require("./routes/chatRoutes")); // Chat routes
 
 // Socket.io Connection
+const userSocketMap = {}; // Map to store user:socketId
+
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
+
+  // Store socket ID with user ID when they connect
+  socket.on("user_connected", (userId) => {
+    userSocketMap[userId] = socket.id;
+    console.log(`User ${userId} connected with socket ${socket.id}`);
+    io.emit("user_online", { userId, online: true });
+  });
 
   // Example: Listen for a new donation event
   socket.on("new_donation", (data) => {
@@ -45,7 +62,48 @@ io.on("connection", (socket) => {
     io.emit("donation_alert", data);
   });
 
+  // Chat: Send message event
+  socket.on("send_message", (data) => {
+    const { receiverId, message } = data;
+    // Send message only to the receiver
+    if (userSocketMap[receiverId]) {
+      io.to(userSocketMap[receiverId]).emit("receive_message", {
+        senderId: data.senderId,
+        senderName: data.senderName,
+        message,
+        timestamp: new Date(),
+      });
+    }
+  });
+
+  // Chat: Typing indicator
+  socket.on("typing", (data) => {
+    const { receiverId, senderName } = data;
+    if (userSocketMap[receiverId]) {
+      io.to(userSocketMap[receiverId]).emit("user_typing", {
+        senderName,
+      });
+    }
+  });
+
+  // Chat: Stop typing
+  socket.on("stop_typing", (data) => {
+    const { receiverId } = data;
+    if (userSocketMap[receiverId]) {
+      io.to(userSocketMap[receiverId]).emit("user_stop_typing", {});
+    }
+  });
+
   socket.on("disconnect", () => {
+    // Remove user from online map
+    for (let userId in userSocketMap) {
+      if (userSocketMap[userId] === socket.id) {
+        delete userSocketMap[userId];
+        io.emit("user_online", { userId, online: false });
+        console.log(`User ${userId} disconnected`);
+        break;
+      }
+    }
     console.log("User disconnected");
   });
 });

@@ -1,4 +1,5 @@
 const Donation = require("../models/Donation");
+const Conversation = require("../models/Conversation");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
 const axios = require("axios"); // 👈 Import axios
@@ -140,6 +141,28 @@ const updateDonationStatus = async (req, res) => {
       // If NGO is accepting, record who accepted it
       if (status === "Accepted") {
         donation.collectedBy = req.user.id;
+
+        // 👇 NEW: Automatically create a chat conversation between donor and NGO
+        try {
+          const donorId = donation.user;
+          const ngoId = req.user.id;
+
+          // Check if conversation already exists
+          let conversation = await Conversation.findOne({
+            participants: { $all: [donorId, ngoId] },
+          });
+
+          // If not, create a new conversation
+          if (!conversation) {
+            conversation = await Conversation.create({
+              participants: [donorId, ngoId],
+            });
+            console.log("Chat conversation created for donation pickup!");
+          }
+        } catch (chatError) {
+          console.error("Error creating chat conversation:", chatError);
+          // Don't fail the donation update if chat creation fails
+        }
       }
     }
 

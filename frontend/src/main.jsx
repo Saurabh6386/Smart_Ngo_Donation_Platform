@@ -6,13 +6,16 @@ import { BrowserRouter } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthProvider } from "./context/AuthContext"; // <--- Import this
+import { ChatProvider } from "./context/ChatContext"; // <--- Import ChatProvider
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
-        <ToastContainer position="top-right" autoClose={3000} />
+        <ChatProvider>
+          <App />
+          <ToastContainer position="top-right" autoClose={3000} />
+        </ChatProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

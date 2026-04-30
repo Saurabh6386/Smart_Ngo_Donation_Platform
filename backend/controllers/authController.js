@@ -188,10 +188,30 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+// @desc    Get all users (for chat user search)
+// @route   GET /api/auth/users
+// @access  Private
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    res.status(200).json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getMe,
   updateUserProfile,
   getUserProfile,
+  getAllUsers,
 };

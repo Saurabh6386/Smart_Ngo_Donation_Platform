@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile"; // 👈 1. Import the Profile page
+import Chat from "./pages/Chat"; // 👈 2. Import the Chat page
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
@@ -32,6 +33,16 @@ function App() {
           element={
             <PrivateRoute>
               <Profile />
+            </PrivateRoute>
+          }
+        />
+
+        {/* 👇 3. Add the Protected Chat Route */}
+        <Route
+          path="/chat"
+          element={
+            <PrivateRoute>
+              <Chat />
             </PrivateRoute>
           }
         />

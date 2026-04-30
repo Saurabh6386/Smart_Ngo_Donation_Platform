@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ChatContext from "../../context/ChatContext";
 import DonationMap from "../DonationMap";
 
 // Helper function to calculate distance between two coordinates in km
@@ -21,6 +22,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 const AdminDashboard = () => {
   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
   const role = userInfo?.role;
+
+  const { fetchConversations } = useContext(ChatContext);
 
   const [users, setUsers] = useState([]);
   const [donations, setDonations] = useState([]);
@@ -165,6 +168,13 @@ const AdminDashboard = () => {
       toast.success(
         `Pickup confirmed ${payload.pickupTime ? `for: ${payload.pickupTime}` : ""}!`,
       );
+      
+      // 👇 NEW: Refetch conversations when donation is accepted to show new chat
+      if (newStatus === "Accepted") {
+        fetchConversations(userInfo.token);
+        toast.info("💬 Chat opened with donor!");
+      }
+      
       fetchDonations();
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update status");

@@ -65,6 +65,11 @@ const Navbar = () => {
               <Link to="/dashboard" style={linkStyle}>
                 Dashboard
               </Link>
+
+              <Link to="/chat" style={linkStyle}>
+                Chat
+              </Link>
+
               <button onClick={handleLogout} style={logoutBtnStyle}>
                 Logout
               </button>
